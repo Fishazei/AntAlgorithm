@@ -21,10 +21,11 @@ public partial class MainWindow : Window
     {
         Graph graph = new Graph();
         
-        graph.ParseFromFile("C:\\Users\\fisha\\source\\repos\\Test\\Test\\graph (2).graph");
+        graph.ParseFromFile("C:\\Users\\dns\\Desktop\\Git\\AntAlgorithm\\AuntAlgorithm\\graph (2).graph");
         InitializeComponent();
 
         GraphViewModel gVM = new GraphViewModel(graph, GraphCanvas);
+
 
         Debug.WriteLine($"Wat: {GraphCanvas.Width}, {GraphCanvas.Height}");
         gVM.NormalizeCoordinates(GraphCanvas.Width, GraphCanvas.Height);
@@ -37,9 +38,15 @@ public partial class MainWindow : Window
             gVM.Render();
         };
 
-        gVM.Render();
-        
-        //gRender.Render();
+        graph.InitPheromones(2.0);
+        graph.LogPheromones();
 
+        graph.FinishPoint = 2;
+        graph.StartPoint = 0;
+
+        AntAl ant = new AntAl(graph);
+        ant.AntTrip();
+
+        gVM.Render();
     }
 }

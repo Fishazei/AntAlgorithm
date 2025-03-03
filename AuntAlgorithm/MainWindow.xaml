@@ -13,7 +13,7 @@
                 <ColumnDefinition Width="653*"/>
             </Grid.ColumnDefinitions>
             <Canvas x:Name="GraphCanvas" Grid.Column="1" Background="AntiqueWhite">
-                <local:Arrow x:Name="A1" StartPoint="50,50" EndPoint="200,150" ArrowHeadPosition="0.5" Stroke="Black" StrokeThickness="2" Fill="Black" HorizontalAlignment="Left" VerticalAlignment="Top" Width="653" Height="434"/>
+                
             </Canvas>
         </Grid>
 

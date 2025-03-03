@@ -49,7 +49,7 @@ namespace AuntAlgorithm
             double maxY = graph.Vertices.Values.Max(v => v.Y);
 
             // Вычисляем масштабные коэффициенты
-            double scaleX = canvasWidth  / (1.5 * (maxY - minY));
+            double scaleX = canvasWidth  / (1.5 * (maxX - minX));
             double scaleY = canvasHeight / (1.5 * (maxY - minY));
 
             double minScale = Math.Min(scaleY, scaleX);
@@ -92,7 +92,7 @@ namespace AuntAlgorithm
                 {
                     Width = 25,
                     Height = 25,
-                    Fill = Brushes.White,
+                    Fill = Brushes.White ,
                     Stroke = Brushes.Black,
                     StrokeThickness = 2
                 };
