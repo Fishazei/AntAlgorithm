@@ -1,0 +1,21 @@
+﻿<Window x:Class="AuntAlgorithm.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AuntAlgorithm"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="147*"/>
+                <ColumnDefinition Width="653*"/>
+            </Grid.ColumnDefinitions>
+            <Canvas x:Name="GraphCanvas" Grid.Column="1" Background="AntiqueWhite">
+                <local:Arrow x:Name="A1" StartPoint="50,50" EndPoint="200,150" ArrowHeadPosition="0.5" Stroke="Black" StrokeThickness="2" Fill="Black" HorizontalAlignment="Left" VerticalAlignment="Top" Width="653" Height="434"/>
+            </Canvas>
+        </Grid>
+
+    </Grid>
+</Window>
