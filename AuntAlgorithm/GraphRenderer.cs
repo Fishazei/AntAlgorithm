@@ -117,7 +117,7 @@ namespace AuntAlgorithm
                     FontSize = 14,
                     HorizontalAlignment = System.Windows.HorizontalAlignment.Center
                 };
-                Canvas.SetLeft(text, normVert[i].X + ((i > 9) ? 4 : 9));
+                Canvas.SetLeft(text, normVert[i].X + ((i > 8) ? 4 : 9));
                 Canvas.SetTop(text, normVert[i].Y + 2);
                 _canvas.Children.Add(text);
             }

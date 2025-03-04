@@ -10,6 +10,13 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
+// Допольнить:
+// Для первой задачи:
+// 1. Вывод кратчайшего пути снизу                                          X
+// 2. Сбоку таблица путей всех муравьёв на итерации                         X
+// 3. Табу лист для муравья (он не может посещать уже посещённую вершину)   V
+// 4. Немного усложнить граф
+
 namespace AuntAlgorithm;
 
 /// <summary>
@@ -17,7 +24,6 @@ namespace AuntAlgorithm;
 /// </summary>
 public partial class MainWindow : Window
 {
-
     AntAl _antAl;
     Graph _graph;
     GraphViewModel _gVM;
@@ -38,11 +44,7 @@ public partial class MainWindow : Window
 
             _gVM.Render();
         };
-
-        _graph.InitPheromones(2.0);
         _graph.LogPheromones();
-
-
 
         _antAl = new AntAl(_graph, P: 0.1, antCount: 1, iterCount: 3);
 
@@ -55,8 +57,8 @@ public partial class MainWindow : Window
 
     private void LoadGraph_Click(object sender, RoutedEventArgs e)
     {
-        _graph.ParseFromFile("C:\\Users\\dns\\Desktop\\Git\\AntAlgorithm\\AuntAlgorithm\\graph.graph");
-        _graph.InitPheromones(2.0);
+        _graph.ParseFromFile("C:\\Users\\fisha\\source\\repos\\AuntAlgorithm\\AuntAlgorithm\\graph.graph");
+        _graph.InitPheromones(_antAl.Tau0);
         _antAl.IsRunning = false;
         _antAl.ZeroIter();
         _gVM.UpdateGraph(_graph);
@@ -69,16 +71,28 @@ public partial class MainWindow : Window
         _gVM.Render();
     }
 
-    private void Start_Click(object sender, RoutedEventArgs e)
+    private async void Start_Click(object sender, RoutedEventArgs e)
     {
         _antAl.IsRunning = true;
-        while (_antAl.IsRunning)
+
+        
+        await Task.Run(async () =>
         {
-            _antAl.AntTravelStep();
-            _gVM.Render();
-            Thread.Sleep(5000);
-        }
+            while (_antAl.IsRunning)
+            {
+                _antAl.AntTravelStep();
+
+                
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    _gVM.Render();
+                });
+
+                await Task.Delay(1000);
+            }
+        });
     }
+
 
     private void Generate_Click(object sender, RoutedEventArgs e)
     {

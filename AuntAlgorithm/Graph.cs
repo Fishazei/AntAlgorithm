@@ -62,14 +62,13 @@ namespace AuntAlgorithm
                 GraphData graph = JsonSerializer.Deserialize<GraphData>(gstring, options);
 
                 if (graph.Vertices == null){
-                    Console.WriteLine("Ошибка считывания вершин!");
+                    Debug.WriteLine("Ошибка считывания вершин!");
                     return false;
                 }
 
                 vertices = new Dictionary<int, Point>();
                 for (int i = 0; i < graph.Vertices.Count(); i++){
                     vertices[i] = new Point(graph.Vertices[i].X, graph.Vertices[i].Y);
-                    
                 }
                 edgesM = new double[graph.Vertices.Count(), graph.Vertices.Count()];
                 foreach (var edge in graph.Edges) {
@@ -84,7 +83,7 @@ namespace AuntAlgorithm
             }
             else
             {
-                Console.WriteLine("File not exist");
+                Debug.WriteLine("File not exist");
             }
             return false;
         }
@@ -316,6 +315,24 @@ namespace AuntAlgorithm
             }
         }
 
+        public int Iter
+        {
+            get => _iter;
+            set
+            {
+                if (_iter != value)
+                {
+                    _iter = value;
+                    if (_iter > _iterCount)
+                    {
+                        _iter = 0;
+                        _isRunning = !_isRunning;
+                    }
+                    OnPropertyChanged(nameof(Iter));
+                }
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected void OnPropertyChanged(string propertyName)
@@ -344,15 +361,15 @@ namespace AuntAlgorithm
 
         #region Сам алгоритм
         // Выбор следующей вершины
-        int ChooseNextVertex(int cur) {
-            double[] prod = CalcProbable(cur);
+        int ChooseNextVertex(int cur, List<int> path) {
+            double[] prod = CalcProbable(cur, path);
             int next = SelectNextVertex(prod);
 
             return next;
         }
 
         // Подсчёт вероятностей
-        double[] CalcProbable(int cur) {
+        double[] CalcProbable(int cur, List<int> path) {
 
             int count = gra.Vertices.Count;
             double[] probable = new double[count];
@@ -361,6 +378,7 @@ namespace AuntAlgorithm
             for (int i = 0; i < count; i++)
             {
                 if (gra.EdgesM[cur, i] == 0) { continue; }
+                if (path.Contains(i)) { continue; }
                 double pher = gra.PheromonsM[cur, i];
                 double vis = 1.0 / gra.EdgesM[cur,i];
 
@@ -370,9 +388,9 @@ namespace AuntAlgorithm
 
             for (int i = 0; i < count; i++) { 
                 probable[i] /= sum;
-                Debug.WriteIf(gra.EdgesM[cur, i] != 0, $"| {i} : {probable[i]:F2} ");
+                //Debug.WriteIf(gra.EdgesM[cur, i] != 0, $"| {i} : {probable[i]:F2} ");
             }
-            Debug.Write($"| = {sum:F2}\n");
+            //Debug.Write($"| = {sum:F2}\n");
 
             return probable;
         }
@@ -418,7 +436,7 @@ namespace AuntAlgorithm
             int cur = _startPoint;
             while (cur != _finishPoint && path.Count() < gra.Vertices.Count() + 1 && cur != -1)
             {
-                cur = ChooseNextVertex(cur);
+                cur = ChooseNextVertex(cur, path);
                 path.Add(cur);
             }
 
@@ -441,24 +459,28 @@ namespace AuntAlgorithm
         // Одна итерация алгоритма по всем муравьям
         public void AntTravelStep()
         {
-            if (_iter > _iterCount) { 
-                _isRunning = false;
-                _iter = 0;
+            if ( Iter > _iterCount) {
+                IsRunning = false;
+                Iter = 0;
                 return; 
             }
-            OptDist = double.MaxValue;
-            
+            double optTmp = double.MaxValue;
             for (int i = 0; i < _antCount; i++){
-                Debug.Write($"Ant: {i} || iter: {_iter + 1}");
+                Debug.Write($"Ant: {i} || iter: {_iter + 1}\n");
                 (List<int> curPath, double curDist) = AntTripFromTo();
-                if (curDist > 0 && curDist < _optDist) {
-                    OptDist = curDist;
+                if (curDist > 0 && curDist < optTmp) {
+                    optTmp = curDist;
                     gra.optPath = curPath;
                 }
             }
+            OptDist = optTmp;
+            if (optTmp == double.MaxValue)
+            {
+                gra.optPath = new List<int>();
+            }
             EvaporatePheromones();
 
-            Debug.Write($"| iter: {++_iter}\n" + $"| optimal path: {string.Join(" -> ", gra.optPath)}" + "\n");
+            Debug.Write($"| iter: {++Iter}\n" + $"| optimal path: {string.Join(" -> ", gra.optPath)}" + "\n");
             Debug.Write($"| optimal distance on iter: {_optDist}\n");
         }
         #endregion
