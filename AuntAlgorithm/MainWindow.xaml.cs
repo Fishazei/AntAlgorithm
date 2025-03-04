@@ -17,36 +17,77 @@ namespace AuntAlgorithm;
 /// </summary>
 public partial class MainWindow : Window
 {
+
+    AntAl _antAl;
+    Graph _graph;
+    GraphViewModel _gVM;
+
     public MainWindow()
     {
-        Graph graph = new Graph();
-        
-        graph.ParseFromFile("C:\\Users\\dns\\Desktop\\Git\\AntAlgorithm\\AuntAlgorithm\\graph (2).graph");
         InitializeComponent();
 
-        GraphViewModel gVM = new GraphViewModel(graph, GraphCanvas);
+        _graph = new Graph();
+        _gVM = new GraphViewModel(_graph, GraphCanvas);
 
-
-        Debug.WriteLine($"Wat: {GraphCanvas.Width}, {GraphCanvas.Height}");
-        gVM.NormalizeCoordinates(GraphCanvas.Width, GraphCanvas.Height);
+        //gVM.NormalizeCoordinates(GraphCanvas.Width, GraphCanvas.Height);
 
         GraphCanvas.SizeChanged += (s, e) =>
         {
-            gVM.NormalizeCoordinates(GraphCanvas.ActualWidth, GraphCanvas.ActualHeight);
+            _gVM.NormalizeCoordinates(GraphCanvas.ActualWidth, GraphCanvas.ActualHeight);
             Debug.WriteLine($"Canvas size: {GraphCanvas.ActualWidth}, {GraphCanvas.ActualHeight})");
 
-            gVM.Render();
+            _gVM.Render();
         };
 
-        graph.InitPheromones(2.0);
-        graph.LogPheromones();
+        _graph.InitPheromones(2.0);
+        _graph.LogPheromones();
 
-        graph.FinishPoint = 2;
-        graph.StartPoint = 0;
 
-        AntAl ant = new AntAl(graph);
-        ant.AntTrip();
 
-        gVM.Render();
+        _antAl = new AntAl(_graph, P: 0.1, antCount: 1, iterCount: 3);
+
+        _antAl.FinishPoint = 13;
+        _antAl.StartPoint = 0;
+
+        // Установка контекста данных
+        DataContext = _antAl;
     }
+
+    private void LoadGraph_Click(object sender, RoutedEventArgs e)
+    {
+        _graph.ParseFromFile("C:\\Users\\dns\\Desktop\\Git\\AntAlgorithm\\AuntAlgorithm\\graph.graph");
+        _graph.InitPheromones(2.0);
+        _antAl.IsRunning = false;
+        _antAl.ZeroIter();
+        _gVM.UpdateGraph(_graph);
+    }
+
+    private void Step_Click(object sender, RoutedEventArgs e)
+    {
+        _antAl.IsRunning = true;
+        _antAl.AntTravelStep();
+        _gVM.Render();
+    }
+
+    private void Start_Click(object sender, RoutedEventArgs e)
+    {
+        _antAl.IsRunning = true;
+        while (_antAl.IsRunning)
+        {
+            _antAl.AntTravelStep();
+            _gVM.Render();
+            Thread.Sleep(5000);
+        }
+    }
+
+    private void Generate_Click(object sender, RoutedEventArgs e)
+    {
+
+    }
+
+    private void Solve_Click(object sender, RoutedEventArgs e)
+    {
+
+    }
+
 }

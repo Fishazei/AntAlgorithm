@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -9,6 +10,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Controls;
+using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
@@ -23,8 +25,10 @@ namespace AuntAlgorithm
 
         // Вершины
         Dictionary<int, Point>? vertices;
-        public int StartPoint { get; set; }
-        public int FinishPoint { get; set; }
+
+        public List<int> optPath;
+
+        public Graph() { PheromonsM = new double[1, 1]; optPath = new List<int>(); }
 
         public Dictionary<int, Point> Vertices
         {
@@ -37,9 +41,10 @@ namespace AuntAlgorithm
             }
         }
 
+
         public double[,] EdgesM
         {
-            get => edgesM;
+            get { return (edgesM == null)? new double[1, 1] : edgesM; }
         }
 
         public bool ParseFromFile(string Path)
@@ -75,6 +80,7 @@ namespace AuntAlgorithm
                         edgesM[edge.Vertex2, edge.Vertex1] = weight;
                     }
                 }
+                optPath = new List<int>();
             }
             else
             {
@@ -95,10 +101,10 @@ namespace AuntAlgorithm
         public void LogPheromones()
         {
             if (PheromonsM == null) { return; }
-            Debug.Write("\n");
+            Debug.Write("Pheromones:\n");
             for (int i = 0; i < Vertices.Count; i++) { 
                 for (int j = 0; j < Vertices.Count; j++) {
-                    Debug.Write($"{PheromonsM[i,j]} ");
+                    Debug.Write($"{PheromonsM[i,j]:F2} ");
                 }
                 Debug.Write("\n");
             }
@@ -142,7 +148,8 @@ namespace AuntAlgorithm
     }
     #endregion
 
-    class AntAl{
+    class AntAl : INotifyPropertyChanged
+    {
         
         Graph gra { get; set; }
 
@@ -155,6 +162,170 @@ namespace AuntAlgorithm
         int _beta;        //β – эмпирические коэффициенты
 
         bool _isRunning;    // Флаг запущенного алгоритма
+        int _iter;
+
+        private int _startPoint;
+        private int _finishPoint;
+
+        double _optDist;
+
+        #region Свойства для связывания
+        public double OptDist
+        {
+            get => _optDist;
+            set
+            {
+                if (_optDist != value)
+                {
+                    _optDist = value;
+                    OnPropertyChanged(nameof(OptDist));
+                }
+            }
+        }
+
+        public int AntCount
+        {
+            get => _antCount;
+            set
+            {
+                if (_antCount != value && !_isRunning)
+                {
+                    _antCount = value;
+                    OnPropertyChanged(nameof(AntCount));
+                    Debug.Write($"ant count {_antCount}\n");
+                }
+            }
+        }
+
+        public int IterCount
+        {
+            get => _iterCount;
+            set
+            {
+                if (_iterCount != value && !_isRunning)
+                {
+                    _iterCount = value;
+                    OnPropertyChanged(nameof(IterCount));
+                    Debug.Write($"iter count {_iterCount}\n");
+                }
+            }
+        }
+
+        public double Tau0
+        {
+            get => _tau0;
+            set
+            {
+                if (_tau0 != value && !_isRunning)
+                {
+                    _tau0 = value;
+                    OnPropertyChanged(nameof(Tau0));
+                }
+            }
+        }
+
+        public int AntTau
+        {
+            get => _antTau;
+            set
+            {
+                if (_antTau != value && !_isRunning)
+                {
+                    _antTau = value;
+                    OnPropertyChanged(nameof(AntTau));
+                }
+            }
+        }
+
+        public double P
+        {
+            get => _P;
+            set
+            {
+                if (_P != value && !_isRunning)
+                {
+                    _P = value;
+                    OnPropertyChanged(nameof(P));
+                }
+            }
+        }
+
+        public int Alpha
+        {
+            get => _alpha;
+            set
+            {
+                if (_alpha != value && !_isRunning)
+                {
+                    _alpha = value;
+                    OnPropertyChanged(nameof(Alpha));
+                }
+            }
+        }
+
+        public int Beta
+        {
+            get => _beta;
+            set
+            {
+                if (_beta != value && !_isRunning)
+                {
+                    _beta = value;
+                    OnPropertyChanged(nameof(Beta));
+                }
+            }
+        }
+
+        public bool IsRunning
+        {
+            get => _isRunning;
+            set
+            {
+                if (_isRunning != value)
+                {
+                    _isRunning = value;
+                    OnPropertyChanged(nameof(IsRunning));
+                    OnPropertyChanged(nameof(IsNotRunning)); // Для блокировки TextBox'ов
+                }
+            }
+        }
+        
+        public int StartPoint
+        {
+            get => _startPoint;
+            set
+            {
+                if (_startPoint != value && !_isRunning)
+                {
+                    _startPoint = value;
+                    OnPropertyChanged(nameof(StartPoint));
+                }
+            }
+        }
+
+        public int FinishPoint
+        {
+            get => _finishPoint;
+            set
+            {
+                if (_finishPoint != value && !_isRunning)
+                {
+                    _finishPoint = value;
+                    OnPropertyChanged(nameof(FinishPoint));
+                }
+            }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        // Свойство для удобства привязки (обратное IsRunning)
+        public bool IsNotRunning => !_isRunning;
+        #endregion
 
         public AntAl(Graph graph, int antCount = 1, int iterCount = 1, double tau0 = 10, int antTau = 10, double P = 1, int alpha = 1, int beta = 1) {
             gra = graph; 
@@ -165,8 +336,13 @@ namespace AuntAlgorithm
             _P = P;
             _alpha = alpha;
             _beta = beta; 
+            _iter = 0;
+            _isRunning = false;
         }
 
+        public void ZeroIter() => _iter = 0;
+
+        #region Сам алгоритм
         // Выбор следующей вершины
         int ChooseNextVertex(int cur) {
             double[] prod = CalcProbable(cur);
@@ -196,7 +372,7 @@ namespace AuntAlgorithm
                 probable[i] /= sum;
                 Debug.WriteIf(gra.EdgesM[cur, i] != 0, $"| {i} : {probable[i]:F2} ");
             }
-            Debug.Write($"| = {sum}\n");
+            Debug.Write($"| = {sum:F2}\n");
 
             return probable;
         }
@@ -216,9 +392,10 @@ namespace AuntAlgorithm
             return -1;
         }
 
-        void DepositPheromones(List<int> path )
+        // Распределение феромонов
+        void DepositPheromones(List<int> path, double dist)
         {
-            double deposit = _antTau / path.Count();
+            double deposit = _antTau / dist;
 
             for (int i = 0; i < path.Count() - 1; i++)
             {
@@ -226,27 +403,64 @@ namespace AuntAlgorithm
             }
         }
 
-        public (List<int> path, double distance) AntTrip()
+        //Выветривание феромонов
+        void EvaporatePheromones()
         {
-            List<int> path = [gra.StartPoint];
-            int cur = gra.StartPoint;
-            double distance = 0;
-            while (cur != gra.FinishPoint && path.Count() < gra.Vertices.Count() + 1 && cur != -1)
+            for (int i = 0; i < gra.Vertices.Count; i++)
+                for (int j = 0; j < gra.Vertices.Count; j++)
+                    gra.PheromonsM[i, j] *= (1 - _P);
+        }
+
+        // Путешествие отдельно взятого муравья
+        (List<int> path, double distance) AntTripFromTo()
+        {
+            List<int> path = [_startPoint];
+            int cur = _startPoint;
+            while (cur != _finishPoint && path.Count() < gra.Vertices.Count() + 1 && cur != -1)
             {
                 cur = ChooseNextVertex(cur);
                 path.Add(cur);
             }
 
-            Debug.Write($" path: {string.Join(" -> ",path)}");
-            Debug.Write($" distance {distance}\n");
-            
+            Debug.Write($" path: {string.Join(" -> ",path)}" + "\n");
 
-            if (cur == gra.FinishPoint)
+            if (cur == _finishPoint)
             {
-                DepositPheromones(path);
-                return (path, distance);
+                double dist = 0;
+
+                for (int i = 1; i < path.Count; i++)
+                    dist += gra.EdgesM[path[i - 1], path[i]];
+
+                DepositPheromones(path, dist);
+                Debug.Write($" distance {dist}\n");
+                return (path, dist);
             }
             return (path, -1);
         }
+
+        // Одна итерация алгоритма по всем муравьям
+        public void AntTravelStep()
+        {
+            if (_iter > _iterCount) { 
+                _isRunning = false;
+                _iter = 0;
+                return; 
+            }
+            OptDist = double.MaxValue;
+            
+            for (int i = 0; i < _antCount; i++){
+                Debug.Write($"Ant: {i} || iter: {_iter + 1}");
+                (List<int> curPath, double curDist) = AntTripFromTo();
+                if (curDist > 0 && curDist < _optDist) {
+                    OptDist = curDist;
+                    gra.optPath = curPath;
+                }
+            }
+            EvaporatePheromones();
+
+            Debug.Write($"| iter: {++_iter}\n" + $"| optimal path: {string.Join(" -> ", gra.optPath)}" + "\n");
+            Debug.Write($"| optimal distance on iter: {_optDist}\n");
+        }
+        #endregion
     }
 }

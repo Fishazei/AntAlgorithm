@@ -64,10 +64,12 @@ namespace AuntAlgorithm
             }
 
             normVert = normalized;
+        }
+
+        public void LogNormVert()
+        {
             foreach (var vertex in normVert)
-            {
                 Debug.WriteLine($"Н Вершина {vertex.Key}: ({vertex.Value.X}, {vertex.Value.Y})");
-            }
         }
 
         // Реализация INotifyPropertyChanged
@@ -75,6 +77,13 @@ namespace AuntAlgorithm
         protected void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public void UpdateGraph(Graph newGraph)
+        {
+            graph = newGraph;
+            NormalizeCoordinates(_canvas.ActualWidth, _canvas.ActualHeight);
+            Render();
         }
 
         public void Render()
@@ -92,8 +101,8 @@ namespace AuntAlgorithm
                 {
                     Width = 25,
                     Height = 25,
-                    Fill = Brushes.White ,
-                    Stroke = Brushes.Black,
+                    Fill = Brushes.White,
+                    Stroke = graph.optPath.Contains(i) ? Brushes.Green : Brushes.Black,
                     StrokeThickness = 2
                 };
                 Canvas.SetLeft(ell, normVert[i].X);
@@ -103,12 +112,12 @@ namespace AuntAlgorithm
                 // Сопутствующий текст
                 var text = new TextBlock
                 {
-                    Text = i.ToString(),
+                    Text = (i+1).ToString(),
                     Foreground = Brushes.Black,
                     FontSize = 14,
                     HorizontalAlignment = System.Windows.HorizontalAlignment.Center
                 };
-                Canvas.SetLeft(text, normVert[i].X + 9);
+                Canvas.SetLeft(text, normVert[i].X + ((i > 9) ? 4 : 9));
                 Canvas.SetTop(text, normVert[i].Y + 2);
                 _canvas.Children.Add(text);
             }
@@ -125,20 +134,41 @@ namespace AuntAlgorithm
                         System.Windows.Point start = new System.Windows.Point(normVert[i].X + 12, normVert[i].Y + 12);
                         System.Windows.Point end = new System.Windows.Point(normVert[j].X + 12, normVert[j].Y + 12);
 
+                        bool isOptimalEdge = false;
+                        for (int k = 0; k < graph.optPath.Count - 1; k++)
+                        {
+                            if (i == graph.optPath[k] && j == graph.optPath[k + 1])
+                            {
+                                isOptimalEdge = true;
+                                break;
+                            }
+                        }
+
                         var arr = new Arrow
                         {
                             StartPoint = start,
                             EndPoint = end,
-                            Stroke = Brushes.Black,
                             StrokeThickness = 2,
-                            Fill = Brushes.Black,
+                            Stroke = isOptimalEdge ? Brushes.Green : Brushes.Black,
+                            Fill =   isOptimalEdge ? Brushes.Green : Brushes.Black,
                             ArrowHeadPosition = 0.8
                         };
                         _canvas.Children.Add(arr);
+
+                        // Сопутствующий текст (длина ребра : кол-во феромонов)
+                        System.Windows.Point mid = new System.Windows.Point((start.X+end.X)/2, (start.Y+end.Y)/2);
+                        var text = new TextBlock
+                        {
+                            Text = $"{graph.EdgesM[i,j]:F1}\n{graph.PheromonsM[i,j]:F1}",
+                            Foreground = Brushes.Green,
+                            FontSize = 14,
+                            HorizontalAlignment = System.Windows.HorizontalAlignment.Center
+                        };
+                        Canvas.SetLeft(text, mid.X);
+                        Canvas.SetTop(text, mid.Y);
+                        _canvas.Children.Add(text);
                     }
-                    Debug.Write($"{graph.EdgesM[i, j]} ");
                 }
-                Debug.Write("\n");
             }
         }
     }

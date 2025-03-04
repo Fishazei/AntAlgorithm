@@ -5,16 +5,119 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AuntAlgorithm"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="MainWindow" Height="600" Width="1500">
+    <Window.Resources>
+        <!-- Регистрация конвертера -->
+        <local:AddOneConverter x:Key="AddOneConverter"/>
+    </Window.Resources>
     <Grid>
-        <Grid>
+        <Grid x:Name="main" Background="LightGray">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="1*"/>
+                <RowDefinition Height="30"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="147*"/>
-                <ColumnDefinition Width="653*"/>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="1*"/>
             </Grid.ColumnDefinitions>
-            <Canvas x:Name="GraphCanvas" Grid.Column="1" Background="AntiqueWhite">
-                
-            </Canvas>
+            <Canvas x:Name="GraphCanvas" Grid.Column="1" Background="White"/>
+            <StackPanel x:Name="menu">
+                <!-- Основная настройка алгоритма -->
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Top" Background="White" Margin="0,10,0,0" Width="200" Height="160">
+                    <TextBlock Text="Настройка алгоритма" TextAlignment="Center" FontWeight="Bold" Margin="5" FontSize="14"/>
+
+                    <!-- Количество муравьёв и итераций -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="муравьёв  " Margin="5,0" FontSize="14"/>
+                        <TextBlock Text="  итераций" Margin="5,0" FontSize="14"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBox Margin="5,0" FontSize="14" Width="75" Text="{Binding AntCount, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsNotRunning}"/>
+                        <TextBox Margin="5,0" FontSize="14" Width="75" Text="{Binding IterCount, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsNotRunning}"/>
+                    </StackPanel>
+
+                    <!-- Феромоны -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="Tau0  " Margin="5,0" FontSize="14"/>
+                        <TextBlock Text="   Tau[k]   " Margin="5,0" FontSize="14"/>
+                        <TextBlock Text="  dTau" Margin="5,0" FontSize="14"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBox Margin="5,0" FontSize="14" Width="45" 
+                                    Text="{Binding Tau0, UpdateSourceTrigger=PropertyChanged, ConverterCulture=en-US}" 
+                                    IsEnabled="{Binding IsNotRunning}"/>
+                        <TextBox Margin="5,0" FontSize="14" Width="45" 
+                                    Text="{Binding AntTau, UpdateSourceTrigger=PropertyChanged, ConverterCulture=en-US}" 
+                                    IsEnabled="{Binding IsNotRunning}"/>
+                        <TextBox Margin="5,0" FontSize="14" Width="45" 
+                                     Text="{Binding P, UpdateSourceTrigger=PropertyChanged, ConverterCulture=en-US}" 
+                                     IsEnabled="{Binding IsNotRunning}"/>
+                    </StackPanel>
+
+                    <!-- alpha, beta -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="alpha     " Margin="5,0" FontSize="14"/>
+                        <TextBlock Text="      beta" Margin="5,0" FontSize="14"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBox Margin="20,0" FontSize="14" Width="45" Text="{Binding Alpha, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsNotRunning}"/>
+                        <TextBox Margin="20,0" FontSize="14" Width="45" Text="{Binding Beta, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsNotRunning}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- первое задание -->
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Top" 
+                            Background="White" Margin="0,10,0,0" Width="200" Height="160">
+
+                    <TextBlock Text="Задание 1" TextAlignment="Center" FontWeight="Bold" Margin="5" FontSize="14"/>
+
+                    <!-- Загрузка graph.ParseFromFile(string Path) -->
+                    <Button Content="Загрузить" FontSize="14" Margin="40,0" Click="LoadGraph_Click"/>
+
+                    <!-- Начальная и конечная вершины -->
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,5,0,0">
+                        <TextBlock Text="старт      " Margin="5,0,5,0" FontSize="14"/>
+                        <TextBlock Text="      финиш" Margin="5,0,5,0" FontSize="14"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBox Margin="5,0" FontSize="14" Width="75" Text="{Binding StartPoint, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource AddOneConverter}}" IsEnabled="{Binding IsNotRunning}"/>
+                        <TextBox Margin="5,0" FontSize="14" Width="75" Text="{Binding FinishPoint, UpdateSourceTrigger=PropertyChanged, Converter={StaticResource AddOneConverter}}" IsEnabled="{Binding IsNotRunning}"/>
+                    </StackPanel>
+
+                    <!-- Запуск алгоритма -->
+                    <Button Content="Шаг" FontSize="14" Margin="40,5" Click="Step_Click"/>
+                    <Button Content="Старт" FontSize="14" Margin="40,0" Click="Start_Click"/>
+                </StackPanel>
+
+                <!-- второе задание -->
+                <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Top" 
+                            Background="White" Margin="0,10,0,0" Width="200" Height="160">
+
+                    <TextBlock Text="Задание 2" TextAlignment="Center" FontWeight="Bold" Margin="5" FontSize="14"/>
+
+                    <!-- Загрузка graph.ParseFromFile(string Path) -->
+                    <Button Content="Сгенерировать" FontSize="14" Margin="40,0" Click="Generate_Click"/>
+
+                    <!-- Начальная и конечная вершины -->
+                    <TextBlock Text="Вершин" Margin="5,0,5,0" FontSize="14" TextAlignment="Center"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBox Margin="5,0" FontSize="14" Width="75"/>
+                    </StackPanel>
+
+                    <!-- Запуск алгоритма -->
+                    <Button Content="Шаг" FontSize="14" Margin="40,5" Click="Solve_Click"/>
+                </StackPanel>
+            </StackPanel>
+            <Grid Grid.Column="1" Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="141*"/>
+                    <ColumnDefinition Width="1109*"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="Bold"
+                           Text="{Binding OptDist, StringFormat='d: {0}'}"/>
+                <TextBlock Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="Bold"
+                           Text="₍^. .^₎"/>
+            </Grid>
         </Grid>
 
     </Grid>
