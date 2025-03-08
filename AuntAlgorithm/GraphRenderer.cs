@@ -18,6 +18,14 @@ namespace AuntAlgorithm
         Canvas _canvas;
         Dictionary<int, Point> normVert;
 
+        Mode _m;
+
+        public Mode M
+        {
+            get => _m;
+            set => _m = value;
+        }
+
         public GraphViewModel(Graph graph, Canvas canvas)
         {
             this.graph = graph;
@@ -49,8 +57,8 @@ namespace AuntAlgorithm
             double maxY = graph.Vertices.Values.Max(v => v.Y);
 
             // Вычисляем масштабные коэффициенты
-            double scaleX = canvasWidth  / (1.5 * (maxX - minX));
-            double scaleY = canvasHeight / (1.5 * (maxY - minY));
+            double scaleX = canvasWidth  / (1.2 * (maxX - minX));
+            double scaleY = canvasHeight / (1.2 * (maxY - minY));
 
             double minScale = Math.Min(scaleY, scaleX);
 
@@ -58,8 +66,8 @@ namespace AuntAlgorithm
             var normalized = new Dictionary<int, Point>();
             foreach (var vertex in graph.Vertices)
             {
-                double x = (vertex.Value.X + 100 - minX) * minScale;
-                double y = (vertex.Value.Y + 75 - minY) * minScale;
+                double x = (vertex.Value.X + 20 - minX) * minScale;
+                double y = (vertex.Value.Y + 20 - minY) * minScale;
                 normalized[vertex.Key] = new Point((int)x, (int)y);
             }
 
@@ -89,7 +97,7 @@ namespace AuntAlgorithm
         public void Render()
         {
             _canvas.Children.Clear();
-            DrawEdges();
+            if (_m == Mode.Graph) DrawEdges();
             DrawNodes();
         }
 
@@ -112,7 +120,7 @@ namespace AuntAlgorithm
                 // Сопутствующий текст
                 var text = new TextBlock
                 {
-                    Text = (i+1).ToString(),
+                    Text = (i + 1).ToString(),
                     Foreground = Brushes.Black,
                     FontSize = 14,
                     HorizontalAlignment = System.Windows.HorizontalAlignment.Center
@@ -171,5 +179,11 @@ namespace AuntAlgorithm
                 }
             }
         }
+    }
+
+    enum Mode
+    {
+        Graph,
+        Comivoiaj
     }
 }

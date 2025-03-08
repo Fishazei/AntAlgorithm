@@ -12,8 +12,10 @@ using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Xml.Linq;
 
 namespace AuntAlgorithm
 {
@@ -88,6 +90,111 @@ namespace AuntAlgorithm
             return false;
         }
 
+        public void GenerateComivoiaj(int N, int W, int H)
+        {
+            if (W == 0 || H == 0 || N <= 0) return;
+            Dictionary<int, Point> tmpVert = new Dictionary<int, Point>();
+            double[,] tmpEdgesM = new double[N, N];
+            double[,] tmpPheromonsM = new double[N, N];
+
+            Random random = new Random();
+            /*
+            for (int i = 0; i < N; i++)
+            {
+                int x = random.Next() % W;
+                int y = random.Next() % H;
+
+                tmpVert.Add(i, new Point(x, y));
+            }
+            */
+
+            // Вариант более сложный
+            // Здесь строим сетку V1
+            /*
+            int Nsq = (int) Math.Sqrt(N) + 1;
+            double cW = W / (Nsq + 1);
+            double cH = H / (Nsq + 1);
+
+            int k = 0;
+            int x, y;
+            for (int i = 0; i < Nsq && k < N; i++)
+                for (int j = 0; j < Nsq && k < N; j++)
+                {
+                    x = (int)(cW * i);
+                    y = (int)(cH * j);
+
+                    tmpVert.Add(k++, new Point(x, y));
+                }
+            */
+            // Здесь строим сетку V2
+            //*
+            // Соотношение сторон плоскости
+            double ratio = W / H;
+
+            // Начальное приближение для k
+            int k = (int)Math.Floor(Math.Sqrt(N * ratio));
+            int m = (int)Math.Ceiling((double)N / k);
+
+            // проверка главного условия: k * m >= N
+            while (k * m < N)
+            {
+                k++;
+                m = (int)Math.Ceiling((double)N / k);
+            }
+
+            k = k < 2 ? 2 : k;
+            // Шаги для сетки
+            double deltaX = W / (k - 1);
+            double deltaY = H / (m - 1);
+
+            // Генерация узлов
+            int z = 0;
+            for (int i = 0; i < k; i++)
+            {
+                for (int j = 0; j < m; j++)
+                {
+                    if (z >= N) break; // Остановимся, если достигли N узлов
+
+                    double x = i * deltaX;
+                    double y = j * deltaY;
+                    
+                    tmpVert.Add(z++, new Point((int)x+25, (int)y+25));
+                }
+            }
+            //*/
+
+            //Случайное смещение вершины, в радиусе r
+            double r = Math.Min(deltaY, deltaX) / 2;
+
+            for (int i = 0; i < N; i++)
+            {
+
+                double angle = random.NextDouble() * 2 * Math.PI;
+                double rad = random.NextDouble() * r;
+
+                double dx = rad * Math.Sin(angle);
+                double dy = rad * Math.Cos(angle);
+
+                Point p = tmpVert[i];
+                Point np = new Point((int) dx + p.X, (int) dy + p.Y);
+
+                tmpVert[i] = np;
+            }
+
+
+            // Расчёт растояний между точками
+            // (Заполнение матрицы растояний в зависимости от растояний между точками) 
+            for (int i = 0; i < N; i++)
+                for (int j = 0; j < N; j++)
+                {
+                    tmpEdgesM[i, j] = 1;
+                }
+
+            vertices = tmpVert;
+            edgesM = tmpEdgesM;
+            PheromonsM = tmpPheromonsM;
+        }
+
         public void InitPheromones(double tau0) {
             if (edgesM == null) { return; }
             PheromonsM = new double[Vertices.Count, Vertices.Count];
@@ -96,7 +203,6 @@ namespace AuntAlgorithm
                     if (edgesM[i, j] != 0)
                         PheromonsM[i, j] = tau0;
         }
-
         public void LogPheromones()
         {
             if (PheromonsM == null) { return; }
@@ -152,21 +258,23 @@ namespace AuntAlgorithm
         
         Graph gra { get; set; }
 
-        int _antCount;    //количество муравьев,
-        int _iterCount;   //количество итераций алгоритма,
-        double _tau0;        //начальное количество феромона на дугах графа,
-        int _antTau;      //запас феромона каждого муравья,
-        double _P;        //коэффициент испарения,
-        int _alpha;       //α - эмпирические коэффициенты
-        int _beta;        //β – эмпирические коэффициенты
+        int _antCount;    // количество муравьев,
+        int _iterCount;   // количество итераций алгоритма,
+        double _tau0;     // начальное количество феромона на дугах графа,
+        int _antTau;      // запас феромона каждого муравья,
+        double _P;        // коэффициент испарения,
+        int _alpha;       // α - эмпирические коэффициенты
+        int _beta;        // β – эмпирические коэффициенты
 
         bool _isRunning;    // Флаг запущенного алгоритма
-        int _iter;
+        int _iter;          // Номер идущей итерации
 
-        private int _startPoint;
-        private int _finishPoint;
+        private int _startPoint;    // Стартовая вершина
+        private int _finishPoint;   
 
+        // Статистика и т.п.
         double _optDist;
+        List<List<int>> _paths;      // Здесь будет сохранять пути
 
         #region Свойства для связывания
         public double OptDist
@@ -333,6 +441,11 @@ namespace AuntAlgorithm
             }
         }
 
+        public List<List<int>> Paths
+        {
+            get; set;
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected void OnPropertyChanged(string propertyName)
@@ -355,6 +468,7 @@ namespace AuntAlgorithm
             _beta = beta; 
             _iter = 0;
             _isRunning = false;
+            _paths = new List<List<int>>();
         }
 
         public void ZeroIter() => _iter = 0;
@@ -464,10 +578,14 @@ namespace AuntAlgorithm
                 Iter = 0;
                 return; 
             }
+
+            _paths.Clear();
             double optTmp = double.MaxValue;
+
             for (int i = 0; i < _antCount; i++){
                 Debug.Write($"Ant: {i} || iter: {_iter + 1}\n");
                 (List<int> curPath, double curDist) = AntTripFromTo();
+                Paths.Add(curPath);         // может быть стоит ввести временный списко, чтобы обнавлять его в конце...
                 if (curDist > 0 && curDist < optTmp) {
                     optTmp = curDist;
                     gra.optPath = curPath;

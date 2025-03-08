@@ -35,8 +35,6 @@ public partial class MainWindow : Window
         _graph = new Graph();
         _gVM = new GraphViewModel(_graph, GraphCanvas);
 
-        //gVM.NormalizeCoordinates(GraphCanvas.Width, GraphCanvas.Height);
-
         GraphCanvas.SizeChanged += (s, e) =>
         {
             _gVM.NormalizeCoordinates(GraphCanvas.ActualWidth, GraphCanvas.ActualHeight);
@@ -57,6 +55,7 @@ public partial class MainWindow : Window
 
     private void LoadGraph_Click(object sender, RoutedEventArgs e)
     {
+        _gVM.M = Mode.Graph;
         _graph.ParseFromFile("C:\\Users\\fisha\\source\\repos\\AuntAlgorithm\\AuntAlgorithm\\graph.graph");
         _graph.InitPheromones(_antAl.Tau0);
         _antAl.IsRunning = false;
@@ -66,6 +65,7 @@ public partial class MainWindow : Window
 
     private void Step_Click(object sender, RoutedEventArgs e)
     {
+        if (_gVM.M == Mode.Comivoiaj) return;
         _antAl.IsRunning = true;
         _antAl.AntTravelStep();
         _gVM.Render();
@@ -73,6 +73,7 @@ public partial class MainWindow : Window
 
     private async void Start_Click(object sender, RoutedEventArgs e)
     {
+        if (_gVM.M == Mode.Comivoiaj) return;
         _antAl.IsRunning = true;
 
         
@@ -96,12 +97,17 @@ public partial class MainWindow : Window
 
     private void Generate_Click(object sender, RoutedEventArgs e)
     {
-
+        _graph.GenerateComivoiaj(50, (int)GraphCanvas.ActualWidth, (int)GraphCanvas.ActualHeight);
+        _gVM.M = Mode.Comivoiaj;
+        _gVM.UpdateGraph(_graph);
+        _gVM.NormalizeCoordinates(GraphCanvas.ActualWidth, GraphCanvas.ActualHeight);
+        _gVM.LogNormVert();
+        _gVM.Render();
     }
 
     private void Solve_Click(object sender, RoutedEventArgs e)
     {
-
+        if (_gVM.M == Mode.Graph) return;
     }
 
 }
