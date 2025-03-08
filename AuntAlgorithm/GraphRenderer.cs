@@ -57,7 +57,7 @@ namespace AuntAlgorithm
             double maxY = graph.Vertices.Values.Max(v => v.Y);
 
             // Вычисляем масштабные коэффициенты
-            double scaleX = canvasWidth  / (1.2 * (maxX - minX));
+            double scaleX = canvasWidth / (1.2 * (maxX - minX));
             double scaleY = canvasHeight / (1.2 * (maxY - minY));
 
             double minScale = Math.Min(scaleY, scaleX);
@@ -98,6 +98,7 @@ namespace AuntAlgorithm
         {
             _canvas.Children.Clear();
             if (_m == Mode.Graph) DrawEdges();
+            else DrawEdges();
             DrawNodes();
         }
 
@@ -151,30 +152,32 @@ namespace AuntAlgorithm
                                 break;
                             }
                         }
+                        if (_m == Mode.Graph || isOptimalEdge)
+                        { 
+                            var arr = new Arrow
+                            {
+                                StartPoint = start,
+                                EndPoint = end,
+                                StrokeThickness = 2,
+                                Stroke = isOptimalEdge ? Brushes.Green : Brushes.Black,
+                                Fill = isOptimalEdge ? Brushes.Green : Brushes.Black,
+                                ArrowHeadPosition = 0.8
+                            };
+                            _canvas.Children.Add(arr);
 
-                        var arr = new Arrow
-                        {
-                            StartPoint = start,
-                            EndPoint = end,
-                            StrokeThickness = 2,
-                            Stroke = isOptimalEdge ? Brushes.Green : Brushes.Black,
-                            Fill =   isOptimalEdge ? Brushes.Green : Brushes.Black,
-                            ArrowHeadPosition = 0.8
-                        };
-                        _canvas.Children.Add(arr);
-
-                        // Сопутствующий текст (длина ребра : кол-во феромонов)
-                        System.Windows.Point mid = new System.Windows.Point((start.X+end.X)/2, (start.Y+end.Y)/2);
-                        var text = new TextBlock
-                        {
-                            Text = $"{graph.EdgesM[i,j]:F1}\n{graph.PheromonsM[i,j]:F1}",
-                            Foreground = Brushes.Green,
-                            FontSize = 14,
-                            HorizontalAlignment = System.Windows.HorizontalAlignment.Center
-                        };
-                        Canvas.SetLeft(text, mid.X);
-                        Canvas.SetTop(text, mid.Y);
-                        _canvas.Children.Add(text);
+                            // Сопутствующий текст (длина ребра : кол-во феромонов)
+                            System.Windows.Point mid = new System.Windows.Point((start.X + end.X) / 2, (start.Y + end.Y) / 2);
+                            var text = new TextBlock
+                            {
+                                Text = $"{graph.EdgesM[i, j]:F1}\n{graph.PheromonsM[i, j]:F1}",
+                                Foreground = Brushes.Green,
+                                FontSize = 14,
+                                HorizontalAlignment = System.Windows.HorizontalAlignment.Center
+                            };
+                            Canvas.SetLeft(text, mid.X);
+                            Canvas.SetTop(text, mid.Y);
+                            _canvas.Children.Add(text);
+                        }
                     }
                 }
             }
@@ -185,5 +188,56 @@ namespace AuntAlgorithm
     {
         Graph,
         Comivoiaj
+    }
+
+    class PathRow : INotifyPropertyChanged
+    {
+        private int _index;
+        private string _path;
+        private double _distance;
+
+        public int Index
+        {
+            get => _index;
+            set
+            {
+                _index = value;
+                OnPropertyChanged(nameof(Index));
+            }
+        }
+
+        public string Path
+        {
+            get => _path;
+            set
+            {
+                _path = value;
+                OnPropertyChanged(nameof(Path));
+            }
+        }
+
+        public double Distance
+        {
+            get => _distance;
+            set
+            {
+                _distance = value;
+                OnPropertyChanged(nameof(Distance));
+            }
+        }
+
+        public PathRow(int index, string path, double distance)
+        {
+            Index = index;
+            Path = path;
+            Distance = distance;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
     }
 }

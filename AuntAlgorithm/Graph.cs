@@ -1,21 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Media;
-using System.Windows.Media.Media3D;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Xml.Linq;
 
 namespace AuntAlgorithm
 {
@@ -97,99 +85,19 @@ namespace AuntAlgorithm
             double[,] tmpEdgesM = new double[N, N];
             double[,] tmpPheromonsM = new double[N, N];
 
-            Random random = new Random();
-            /*
-            for (int i = 0; i < N; i++)
-            {
-                int x = random.Next() % W;
-                int y = random.Next() % H;
+            // Создание словаря точек
+            var lp = PointsGenerator.QDRangeGenerate(N, W, H, 50);
+            if (lp.Count < N) return;
 
-                tmpVert.Add(i, new Point(x, y));
-            }
-            */
-
-            // Вариант более сложный
-            // Здесь строим сетку V1
-            /*
-            int Nsq = (int) Math.Sqrt(N) + 1;
-            double cW = W / (Nsq + 1);
-            double cH = H / (Nsq + 1);
-
-            int k = 0;
-            int x, y;
-            for (int i = 0; i < Nsq && k < N; i++)
-                for (int j = 0; j < Nsq && k < N; j++)
-                {
-                    x = (int)(cW * i);
-                    y = (int)(cH * j);
-
-                    tmpVert.Add(k++, new Point(x, y));
-                }
-            */
-            // Здесь строим сетку V2
-            //*
-            // Соотношение сторон плоскости
-            double ratio = W / H;
-
-            // Начальное приближение для k
-            int k = (int)Math.Floor(Math.Sqrt(N * ratio));
-            int m = (int)Math.Ceiling((double)N / k);
-
-            // проверка главного условия: k * m >= N
-            while (k * m < N)
-            {
-                k++;
-                m = (int)Math.Ceiling((double)N / k);
-            }
-
-            k = k < 2 ? 2 : k;
-            // Шаги для сетки
-            double deltaX = W / (k - 1);
-            double deltaY = H / (m - 1);
-
-            // Генерация узлов
-            int z = 0;
-            for (int i = 0; i < k; i++)
-            {
-                for (int j = 0; j < m; j++)
-                {
-                    if (z >= N) break; // Остановимся, если достигли N узлов
-
-                    double x = i * deltaX;
-                    double y = j * deltaY;
-                    
-                    tmpVert.Add(z++, new Point((int)x+25, (int)y+25));
-                }
-            }
-            //*/
-
-            //Случайное смещение вершины, в радиусе r
-            double r = Math.Min(deltaY, deltaX) / 2;
-
-            for (int i = 0; i < N; i++)
-            {
-
-                double angle = random.NextDouble() * 2 * Math.PI;
-                double rad = random.NextDouble() * r;
-
-                double dx = rad * Math.Sin(angle);
-                double dy = rad * Math.Cos(angle);
-
-                Point p = tmpVert[i];
-                Point np = new Point((int) dx + p.X, (int) dy + p.Y);
-
-                tmpVert[i] = np;
-            }
-
+            for (int i = 0; i < N; i++) 
+                tmpVert.Add(i, lp[i]);
 
             // Расчёт растояний между точками
             // (Заполнение матрицы растояний в зависимости от растояний между точками) 
             for (int i = 0; i < N; i++)
                 for (int j = 0; j < N; j++)
-                {
-                    tmpEdgesM[i, j] = 1;
-                }
-
+                    tmpEdgesM[i, j] = CalcDist(tmpVert[i], tmpVert[j]);
+           
             vertices = tmpVert;
             edgesM = tmpEdgesM;
             PheromonsM = tmpPheromonsM;
@@ -215,47 +123,16 @@ namespace AuntAlgorithm
             }
             Debug.Write("\n");
         }
-    }
 
-    #region Классы для десериализации
-    public class Vertex
-    {
-        public int X { get; set; }
-        public int Y { get; set; }
-        public string Name { get; set; }
-        public int Radius { get; set; }
-        public string Background { get; set; }
-        public int FontSize { get; set; }
-        public string Color { get; set; }
-        public string Border { get; set; }
+        double CalcDist(Point one, Point two)
+        {
+            double dy = two.Y - one.Y;
+            double dx = two.X - one.X;
+            return Math.Sqrt(dy * dy + dx * dx);
+        }
     }
-
-    public class Edge
-    {
-        public int Vertex1 { get; set; }
-        public int Vertex2 { get; set; }
-        public string Weight { get; set; }
-        public bool IsDirected { get; set; }
-        public int ControlStep { get; set; }
-        public int FontSize { get; set; }
-        public int LineWidth { get; set; }
-        public string Background { get; set; }
-        public string Color { get; set; }
-    }
-
-    public class GraphData
-    {
-        public double X0 { get; set; }
-        public double Y0 { get; set; }
-        public List<Vertex> Vertices { get; set; }
-        public List<Edge> Edges { get; set; }
-        public List<object> Texts { get; set; }
-    }
-    #endregion
-
     class AntAl : INotifyPropertyChanged
     {
-        
         Graph gra { get; set; }
 
         int _antCount;    // количество муравьев,
@@ -270,11 +147,13 @@ namespace AuntAlgorithm
         int _iter;          // Номер идущей итерации
 
         private int _startPoint;    // Стартовая вершина
-        private int _finishPoint;   
+        private int _finishPoint;
+        private int _pc;            // Кол-во вершин
 
         // Статистика и т.п.
         double _optDist;
-        List<List<int>> _paths;      // Здесь будет сохранять пути
+        ObservableCollection<PathRow> _paths;      // Здесь сохраняем пути
+        List<double> _optD; 
 
         #region Свойства для связывания
         public double OptDist
@@ -441,9 +320,16 @@ namespace AuntAlgorithm
             }
         }
 
-        public List<List<int>> Paths
+        public int PC
         {
-            get; set;
+            get { return _pc; }
+            set { _pc = value; OnPropertyChanged(nameof(PC));}
+        }
+
+        public ObservableCollection<PathRow> Paths
+        {
+            get { return _paths; }
+            set { _paths = value; }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -468,7 +354,9 @@ namespace AuntAlgorithm
             _beta = beta; 
             _iter = 0;
             _isRunning = false;
-            _paths = new List<List<int>>();
+            _pc = 10;
+            _paths = new ObservableCollection<PathRow>();
+            _optD = new List<double>();
         }
 
         public void ZeroIter() => _iter = 0;
@@ -484,7 +372,6 @@ namespace AuntAlgorithm
 
         // Подсчёт вероятностей
         double[] CalcProbable(int cur, List<int> path) {
-
             int count = gra.Vertices.Count;
             double[] probable = new double[count];
             double sum = 0;
@@ -502,9 +389,9 @@ namespace AuntAlgorithm
 
             for (int i = 0; i < count; i++) { 
                 probable[i] /= sum;
-                //Debug.WriteIf(gra.EdgesM[cur, i] != 0, $"| {i} : {probable[i]:F2} ");
+                Debug.WriteIf(gra.EdgesM[cur, i] != 0, $"| {i} : {probable[i]:F2} ");
             }
-            //Debug.Write($"| = {sum:F2}\n");
+            Debug.Write($"| = {sum:F2}\n");
 
             return probable;
         }
@@ -543,7 +430,7 @@ namespace AuntAlgorithm
                     gra.PheromonsM[i, j] *= (1 - _P);
         }
 
-        // Путешествие отдельно взятого муравья
+        // Путешествие отдельно взятого муравья от и до
         (List<int> path, double distance) AntTripFromTo()
         {
             List<int> path = [_startPoint];
@@ -571,7 +458,7 @@ namespace AuntAlgorithm
         }
 
         // Одна итерация алгоритма по всем муравьям
-        public void AntTravelStep()
+        public void AntTravelStep(bool salesman)
         {
             if ( Iter > _iterCount) {
                 IsRunning = false;
@@ -579,28 +466,364 @@ namespace AuntAlgorithm
                 return; 
             }
 
-            _paths.Clear();
+            if (Paths.Count > 0)
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() => Paths.Clear()));
+            
             double optTmp = double.MaxValue;
+            var newPaths = new List<PathRow>();
 
             for (int i = 0; i < _antCount; i++){
                 Debug.Write($"Ant: {i} || iter: {_iter + 1}\n");
-                (List<int> curPath, double curDist) = AntTripFromTo();
-                Paths.Add(curPath);         // может быть стоит ввести временный списко, чтобы обнавлять его в конце...
+                List<int> curPath; double curDist;
+                if (!salesman)  (curPath, curDist) = AntTripFromTo();
+                else            (curPath, curDist) = AntTripSalesman(1);
+               
                 if (curDist > 0 && curDist < optTmp) {
                     optTmp = curDist;
-                    gra.optPath = curPath;
+                    gra.optPath = new List<int>(curPath);
                 }
+
+                for (int j = 0; j < curPath.Count; j++) curPath[j]++;
+                newPaths.Add(new PathRow(i, string.Join(" -> ", curPath), curDist));
             }
+
+            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            {
+                foreach (var path in newPaths) Paths.Add(path);
+            });
+
             OptDist = optTmp;
             if (optTmp == double.MaxValue)
-            {
                 gra.optPath = new List<int>();
-            }
+            else 
+                _optD.Add(optTmp);
+            
             EvaporatePheromones();
 
             Debug.Write($"| iter: {++Iter}\n" + $"| optimal path: {string.Join(" -> ", gra.optPath)}" + "\n");
             Debug.Write($"| optimal distance on iter: {_optDist}\n");
         }
+
+        // Путешествие отдельно взятого муравья по всем точкам
+        (List<int> path, double distance) AntTripSalesman(int start)
+        {
+            List<int> path = [start];
+            int cur = start;
+
+            // Посещаем все вершины
+            while (path.Count < gra.Vertices.Count)
+            {
+                cur = ChooseNextVertex(cur, path);
+                if (cur == -1) // Если следующая вершина не найдена
+                {
+                    return (path, -1); // Некорректный путь
+                }
+                path.Add(cur);
+            }
+
+            // Возвращаемся в начальную вершину
+            path.Add(start);
+
+            double dist = 0;
+            for (int i = 1; i < path.Count; i++)
+            {
+                dist += gra.EdgesM[path[i - 1], path[i]];
+            }
+
+            DepositPheromones(path, dist);
+
+            Debug.Write($" path: {string.Join(" -> ", path)}" + "\n");
+            Debug.Write($" distance {dist}\n");
+
+            return (path, dist);
+        }
+
         #endregion
+
+        public void LogOptimalDistanceArchive()
+        {
+            Debug.WriteLine($"\ndistances: {string.Join("\n", _optD)}");
+        }
     }
+
+    #region Классы для десериализации
+    public class Vertex
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public string Name { get; set; }
+        public int Radius { get; set; }
+        public string Background { get; set; }
+        public int FontSize { get; set; }
+        public string Color { get; set; }
+        public string Border { get; set; }
+    }
+
+    public class Edge
+    {
+        public int Vertex1 { get; set; }
+        public int Vertex2 { get; set; }
+        public string Weight { get; set; }
+        public bool IsDirected { get; set; }
+        public int ControlStep { get; set; }
+        public int FontSize { get; set; }
+        public int LineWidth { get; set; }
+        public string Background { get; set; }
+        public string Color { get; set; }
+    }
+
+    public class GraphData
+    {
+        public double X0 { get; set; }
+        public double Y0 { get; set; }
+        public List<Vertex> Vertices { get; set; }
+        public List<Edge> Edges { get; set; }
+        public List<object> Texts { get; set; }
+    }
+    #endregion
+    #region Генерация точек
+    static class PointsGenerator
+    {
+        private static Random random = new Random();
+
+        /// <summary>
+        /// Генерация точек с помощью простого ГПСЧ
+        /// </summary>
+        /// <param name="N">кол-во точек</param>
+        /// <param name="W">ширина поверхности</param>
+        /// <param name="H">высота поверхности</param>
+        /// <returns></returns>
+        static public List<Point> SimpleRandGenerate(int N, int W, int H)
+        {
+            List<Point> points = new List<Point>();
+
+            for (int i = 0; i < N; i++)
+            {
+                int x = random.Next() % W;
+                int y = random.Next() % H;
+
+                points.Add(new Point(x, y));
+            }
+
+            return points;
+        }
+
+        /// <summary>
+        /// Генерация точек с помощью сетки
+        /// </summary>
+        /// <param name="N">кол-во точек</param>
+        /// <param name="W">ширина поверхности</param>
+        /// <param name="H">высота поверхности</param>
+        /// <returns></returns>
+        static public List<Point> GridRandGenerate(int N, int W, int H)
+        {
+            List<Point> points = new List<Point>();
+            // Соотношение сторон плоскости
+            double ratio = W / H;
+
+            // Начальное приближение для k
+            int k = (int)Math.Floor(Math.Sqrt(N * ratio));
+            int m = (int)Math.Ceiling((double)N / k);
+
+            // проверка главного условия: k * m >= N
+            while (k * m < N)
+            {
+                m = (int)Math.Ceiling((double)N / ++k);
+            }
+
+            k = k < 2 ? 2 : k;
+            // Шаги для сетки
+            double deltaX = W / (k - 1);
+            double deltaY = H / (m - 1);
+
+            // Генерация узлов
+            int z = 0;
+            for (int i = 0; i < k; i++)
+                for (int j = 0; j < m; j++)
+                {
+                    if (z >= N) break; // Остановимся, если достигли N узлов
+                    double x = i * deltaX;
+                    double y = j * deltaY;
+
+                    points.Add(new Point((int)x + 25, (int)y + 25));
+                    z++;
+                }
+
+            //Случайное смещение вершины, в радиусе r
+            double r = Math.Min(deltaY, deltaX) / 2.2;
+            for (int i = 0; i < N; i++)
+            {
+                double angle = random.NextDouble() * 2 * Math.PI;
+                double rad = random.NextDouble() * r;
+                double dx = rad * Math.Sin(angle);
+                double dy = rad * Math.Cos(angle);
+
+                Point p = points[i];
+                Point np = new Point((int)dx + p.X, (int)dy + p.Y);
+                points[i] = np;
+            }
+
+            return points;
+        }
+        
+        /// <summary>
+        /// Генерация точек с минимальным расстоянием между ними, проверка с помощью Quad дерева
+        /// </summary>
+        /// <param name="N">кол-во точек</param>
+        /// <param name="W">ширина плоскости</param>
+        /// <param name="H">высота плоскости</param>
+        /// <param name="r">минимальное раст.</param>
+        /// <param name="maxAtt">кол-во попыток на создание точки</param>
+        /// <returns></returns>
+        static public List<Point> QDRangeGenerate(int N, int W, int H, double r, int maxAtt = 1000)
+        {
+            var points = new List<Point>();
+            var QDTree = new QuadTree(new QuadTree.Rectangle(0,0,W,H));
+            int att = 0;
+
+            while (points.Count < N && att < maxAtt)
+            {
+                double x = random.NextDouble() * W;
+                double y = random.NextDouble() * H;
+
+                var range = new QuadTree.Rectangle(x - r, y - r, 2 * r, 2 * r);
+                var nearbyPoints = QDTree.Query(range);
+
+                bool isValid = true;
+                foreach (var point in nearbyPoints)
+                {
+                    double dx = point.X - x;
+                    double dy = point.Y - y;
+                    double dist = Math.Sqrt(dx * dx + dy * dy);
+
+                    if (dist < r)
+                    {
+                        isValid = false; break;
+                    }
+                }
+
+                if (isValid)
+                {
+                    var p = new Point((int)x, (int)y);
+                    points.Add(p);
+                    QDTree.Insert(p);
+                    att = 0;
+                }
+                else att++;
+            }
+
+            if (points.Count < N)
+            {
+                Debug.WriteLine($"WARRNING. удалось разместить только {points.Count} из {N}");
+            }
+            return points;
+        }
+    }
+
+    // Чисто прикол
+    // квадродерево, позволяет отслеживать всякое разное на плоскости, говорят крутое
+    public class QuadTree
+    {
+        const int _capacity = 4;
+        
+        //public class Point
+        //{
+        //    public int X { get; }
+        //    public int Y { get; }
+
+        //    public Point(int x, int y)
+        //    {
+        //        X = x;
+        //        Y = y;
+        //    }
+        //}
+
+        public class Rectangle
+        {
+            public double X { get; }
+            public double Y { get; }
+            public double Width { get; }
+            public double Height { get; }
+
+            public Rectangle(double x, double y, double width, double height)
+            {
+                X = x;
+                Y = y;
+                Width = width;
+                Height = height;
+            }
+
+            public bool Contains(Point p)
+            {
+                return p.X >= X && p.X <= X + Width && p.Y >= Y && p.Y <= Y + Height;
+            }
+
+            public bool Intersects(Rectangle r) 
+            {
+                return r.X <= X + Width && r.X + r.Width >= X && 
+                       r.Y <= Y + Height && r.Y + r.Height >= Y;
+            }
+        }
+
+        private Rectangle boundary;
+        private List<Point> points;
+        private QuadTree[] children;
+
+        public QuadTree(Rectangle b)
+        {
+            boundary = b;
+            points = new List<Point>();
+            children = new QuadTree[_capacity];
+        }
+
+        public bool Insert(Point p)
+        {
+            if (!boundary.Contains(p)) return false;
+
+            if (points.Count < _capacity)
+            {
+                points.Add(p);
+                return true;
+            }
+
+            if (children[0] == null) Subdivide();
+
+            for (int i = 0; i < _capacity; i++)
+                if (children[i].Insert(p)) return true;
+            
+
+            return false;
+        }
+
+        private void Subdivide()
+        {
+            double x = boundary.X;
+            double y = boundary.Y;
+            double w = boundary.Width / 2;
+            double h = boundary.Height / 2;
+
+            children[0] = new QuadTree(new Rectangle(x,y, w, h));
+            children[1] = new QuadTree(new Rectangle(x + w, y, w, h));
+            children[2] = new QuadTree(new Rectangle(x, y + h, w, h));
+            children[3] = new QuadTree(new Rectangle(x + w, y + h, w, h));
+        }
+
+        public List<Point> Query(Rectangle range)
+        {
+            var found = new List<Point>();
+
+            if (!boundary.Intersects(range))
+                return found;
+
+            foreach (var point in points)
+                if (range.Contains(point)) found.Add(point);
+
+            if (children[0] != null)
+                for (int i = 0; i < _capacity; i++)
+                    found.AddRange(children[i].Query(range));
+
+            return found;
+        }
+    }
+    #endregion
 }

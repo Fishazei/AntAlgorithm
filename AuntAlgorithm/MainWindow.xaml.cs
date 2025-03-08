@@ -1,14 +1,5 @@
 ﻿using System.Diagnostics;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 // Допольнить:
 // Для первой задачи:
@@ -50,13 +41,14 @@ public partial class MainWindow : Window
         _antAl.StartPoint = 0;
 
         // Установка контекста данных
+        PathsGrid.ItemsSource = _antAl.Paths;
         DataContext = _antAl;
     }
 
     private void LoadGraph_Click(object sender, RoutedEventArgs e)
     {
         _gVM.M = Mode.Graph;
-        _graph.ParseFromFile("C:\\Users\\fisha\\source\\repos\\AuntAlgorithm\\AuntAlgorithm\\graph.graph");
+        _graph.ParseFromFile("graph.graph");
         _graph.InitPheromones(_antAl.Tau0);
         _antAl.IsRunning = false;
         _antAl.ZeroIter();
@@ -67,7 +59,7 @@ public partial class MainWindow : Window
     {
         if (_gVM.M == Mode.Comivoiaj) return;
         _antAl.IsRunning = true;
-        _antAl.AntTravelStep();
+        _antAl.AntTravelStep(false);
         _gVM.Render();
     }
 
@@ -81,9 +73,8 @@ public partial class MainWindow : Window
         {
             while (_antAl.IsRunning)
             {
-                _antAl.AntTravelStep();
+                _antAl.AntTravelStep(false);
 
-                
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
                     _gVM.Render();
@@ -94,20 +85,35 @@ public partial class MainWindow : Window
         });
     }
 
-
     private void Generate_Click(object sender, RoutedEventArgs e)
     {
-        _graph.GenerateComivoiaj(50, (int)GraphCanvas.ActualWidth, (int)GraphCanvas.ActualHeight);
+        _graph.GenerateComivoiaj(_antAl.PC, (int)GraphCanvas.ActualWidth, (int)GraphCanvas.ActualHeight);
         _gVM.M = Mode.Comivoiaj;
+        _graph.InitPheromones(_antAl.Tau0);
         _gVM.UpdateGraph(_graph);
         _gVM.NormalizeCoordinates(GraphCanvas.ActualWidth, GraphCanvas.ActualHeight);
         _gVM.LogNormVert();
         _gVM.Render();
     }
 
-    private void Solve_Click(object sender, RoutedEventArgs e)
+    private async void Solve_Click(object sender, RoutedEventArgs e)
     {
         if (_gVM.M == Mode.Graph) return;
-    }
+        _antAl.IsRunning = true;
 
+        await Task.Run(async () =>
+        {
+            while (_antAl.IsRunning)
+            {
+                _antAl.AntTravelStep(true);
+                await Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    _gVM.Render();
+                });
+                await Task.Delay(1000);
+            }
+        });
+
+        _antAl.LogOptimalDistanceArchive();
+    }
 }

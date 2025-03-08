@@ -40,7 +40,7 @@
                     <!-- Феромоны -->
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                         <TextBlock Text="Tau0  " Margin="5,0" FontSize="14"/>
-                        <TextBlock Text="   Tau[k]   " Margin="5,0" FontSize="14"/>
+                        <TextBlock Text="   Q   " Margin="5,0" FontSize="14"/>
                         <TextBlock Text="  dTau" Margin="5,0" FontSize="14"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -102,7 +102,8 @@
                     <!-- Начальная и конечная вершины -->
                     <TextBlock Text="Вершин" Margin="5,0,5,0" FontSize="14" TextAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                        <TextBox Margin="5,0" FontSize="14" Width="75"/>
+                        <TextBox Margin="5,0" FontSize="14" Width="75"
+                                 Text="{Binding PC, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsNotRunning}"/>
                     </StackPanel>
 
                     <!-- Запуск алгоритма -->
@@ -119,14 +120,15 @@
                 <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="Bold"
                            Text="{Binding Iter, StringFormat='i: {0}'}"/>
                 <TextBlock Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="Bold"
-                           Text="{Binding OptDist, StringFormat='d: {0}'}"/>
+                           Text="{Binding OptDist, StringFormat='d: {0:F2}'}"/>
                 <TextBlock Grid.Column="2" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14" FontWeight="Bold"
                            Text="₍^. .^₎"/>
             </Grid>
-            <DataGrid x:Name="PathsGrid" Grid.Column="2" Margin="15">
+            <DataGrid x:Name="PathsGrid" ItemsSource="{Binding Paths}" AutoGenerateColumns="False" Grid.Column="2" Margin="15" AreRowDetailsFrozen="False">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="i" Width="30"/>
-                    <DataGridTextColumn Header="Путь" Width="1*"/>
+                    <DataGridTextColumn Header="Index" Binding="{Binding Index}" Width="Auto"/>
+                    <DataGridTextColumn Header="Dist" Binding="{Binding Distance}" Width="Auto"/>
+                    <DataGridTextColumn Header="Path" Binding="{Binding Path}" Width="Auto"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
