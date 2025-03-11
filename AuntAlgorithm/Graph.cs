@@ -139,7 +139,7 @@ namespace AuntAlgorithm
         int _iterCount;   // количество итераций алгоритма,
         double _tau0;     // начальное количество феромона на дугах графа,
         int _antTau;      // запас феромона каждого муравья,
-        double _P;        // коэффициент испарения,
+        int _P;        // коэффициент испарения,
         int _alpha;       // α - эмпирические коэффициенты
         int _beta;        // β – эмпирические коэффициенты
 
@@ -168,7 +168,6 @@ namespace AuntAlgorithm
                 }
             }
         }
-
         public int AntCount
         {
             get => _antCount;
@@ -182,7 +181,6 @@ namespace AuntAlgorithm
                 }
             }
         }
-
         public int IterCount
         {
             get => _iterCount;
@@ -196,7 +194,6 @@ namespace AuntAlgorithm
                 }
             }
         }
-
         public double Tau0
         {
             get => _tau0;
@@ -209,7 +206,6 @@ namespace AuntAlgorithm
                 }
             }
         }
-
         public int AntTau
         {
             get => _antTau;
@@ -222,8 +218,7 @@ namespace AuntAlgorithm
                 }
             }
         }
-
-        public double P
+        public int P
         {
             get => _P;
             set
@@ -235,7 +230,6 @@ namespace AuntAlgorithm
                 }
             }
         }
-
         public int Alpha
         {
             get => _alpha;
@@ -248,7 +242,6 @@ namespace AuntAlgorithm
                 }
             }
         }
-
         public int Beta
         {
             get => _beta;
@@ -261,7 +254,6 @@ namespace AuntAlgorithm
                 }
             }
         }
-
         public bool IsRunning
         {
             get => _isRunning;
@@ -274,8 +266,7 @@ namespace AuntAlgorithm
                     OnPropertyChanged(nameof(IsNotRunning)); // Для блокировки TextBox'ов
                 }
             }
-        }
-        
+        }    
         public int StartPoint
         {
             get => _startPoint;
@@ -288,7 +279,6 @@ namespace AuntAlgorithm
                 }
             }
         }
-
         public int FinishPoint
         {
             get => _finishPoint;
@@ -301,7 +291,6 @@ namespace AuntAlgorithm
                 }
             }
         }
-
         public int Iter
         {
             get => _iter;
@@ -313,13 +302,12 @@ namespace AuntAlgorithm
                     if (_iter > _iterCount)
                     {
                         _iter = 0;
-                        _isRunning = !_isRunning;
+                        IsRunning = false;
                     }
                     OnPropertyChanged(nameof(Iter));
                 }
             }
         }
-
         public int PC
         {
             get { return _pc; }
@@ -331,7 +319,6 @@ namespace AuntAlgorithm
             get { return _paths; }
             set { _paths = value; }
         }
-
         public event PropertyChangedEventHandler PropertyChanged;
 
         protected void OnPropertyChanged(string propertyName)
@@ -343,7 +330,7 @@ namespace AuntAlgorithm
         public bool IsNotRunning => !_isRunning;
         #endregion
 
-        public AntAl(Graph graph, int antCount = 1, int iterCount = 1, double tau0 = 10, int antTau = 10, double P = 1, int alpha = 1, int beta = 1) {
+        public AntAl(Graph graph, int antCount = 1, int iterCount = 1, double tau0 = 10, int antTau = 10, int P = 1, int alpha = 1, int beta = 1) {
             gra = graph; 
             _antCount = antCount;
             _iterCount = iterCount;
@@ -389,9 +376,9 @@ namespace AuntAlgorithm
 
             for (int i = 0; i < count; i++) { 
                 probable[i] /= sum;
-                Debug.WriteIf(gra.EdgesM[cur, i] != 0, $"| {i} : {probable[i]:F2} ");
+                //Debug.WriteIf(gra.EdgesM[cur, i] != 0, $"| {i} : {probable[i]:F2} ");
             }
-            Debug.Write($"| = {sum:F2}\n");
+            //Debug.Write($"| = {sum:F2}\n");
 
             return probable;
         }
@@ -427,7 +414,7 @@ namespace AuntAlgorithm
         {
             for (int i = 0; i < gra.Vertices.Count; i++)
                 for (int j = 0; j < gra.Vertices.Count; j++)
-                    gra.PheromonsM[i, j] *= (1 - _P);
+                    gra.PheromonsM[i, j] *= (1 - _P / 100f);
         }
 
         // Путешествие отдельно взятого муравья от и до
@@ -441,7 +428,7 @@ namespace AuntAlgorithm
                 path.Add(cur);
             }
 
-            Debug.Write($" path: {string.Join(" -> ",path)}" + "\n");
+            //Debug.Write($" path: {string.Join(" -> ",path)}" + "\n");
 
             if (cur == _finishPoint)
             {
@@ -451,7 +438,7 @@ namespace AuntAlgorithm
                     dist += gra.EdgesM[path[i - 1], path[i]];
 
                 DepositPheromones(path, dist);
-                Debug.Write($" distance {dist}\n");
+                //Debug.Write($" distance {dist}\n");
                 return (path, dist);
             }
             return (path, -1);
@@ -460,43 +447,44 @@ namespace AuntAlgorithm
         // Одна итерация алгоритма по всем муравьям
         public void AntTravelStep(bool salesman)
         {
-            if ( Iter > _iterCount) {
+            if ( Iter >= _iterCount) {
                 IsRunning = false;
                 Iter = 0;
                 return; 
             }
 
-            if (Paths.Count > 0)
-                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() => Paths.Clear()));
-            
             double optTmp = double.MaxValue;
             var newPaths = new List<PathRow>();
+            int minInd = 0;
+
+            if (Paths.Count > 0)
+                System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() => Paths.Clear()));
 
             for (int i = 0; i < _antCount; i++){
                 Debug.Write($"Ant: {i} || iter: {_iter + 1}\n");
                 List<int> curPath; double curDist;
                 if (!salesman)  (curPath, curDist) = AntTripFromTo();
-                else            (curPath, curDist) = AntTripSalesman(1);
+                else            (curPath, curDist) = AntTripSalesman(Math.Min(i, PC-1));
                
                 if (curDist > 0 && curDist < optTmp) {
                     optTmp = curDist;
                     gra.optPath = new List<int>(curPath);
+                    minInd = i;
                 }
 
                 for (int j = 0; j < curPath.Count; j++) curPath[j]++;
-                newPaths.Add(new PathRow(i, string.Join(" -> ", curPath), curDist));
+                newPaths.Add(new PathRow(i, string.Join(" -> ", curPath), curDist, false));
             }
 
+            newPaths[minInd].IsMinimal = true;
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
                 foreach (var path in newPaths) Paths.Add(path);
             });
 
             OptDist = optTmp;
-            if (optTmp == double.MaxValue)
-                gra.optPath = new List<int>();
-            else 
-                _optD.Add(optTmp);
+            if (optTmp == double.MaxValue) gra.optPath = new List<int>();
+            else                           _optD.Add(optTmp);
             
             EvaporatePheromones();
 
@@ -520,8 +508,6 @@ namespace AuntAlgorithm
                 }
                 path.Add(cur);
             }
-
-            // Возвращаемся в начальную вершину
             path.Add(start);
 
             double dist = 0;

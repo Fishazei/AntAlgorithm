@@ -9,6 +9,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Drawing;
 using System.Diagnostics;
+using System.Collections.ObjectModel;
+using System.IO;
 
 namespace AuntAlgorithm
 {
@@ -190,11 +192,14 @@ namespace AuntAlgorithm
         Comivoiaj
     }
 
+    // Класс для создания таблицы путей
     class PathRow : INotifyPropertyChanged
     {
         private int _index;
         private string _path;
         private double _distance;
+
+        public bool IsMinimal { get; set; }
 
         public int Index
         {
@@ -226,8 +231,9 @@ namespace AuntAlgorithm
             }
         }
 
-        public PathRow(int index, string path, double distance)
+        public PathRow(int index, string path, double distance, bool isMinimal = false)
         {
+            IsMinimal = isMinimal;
             Index = index;
             Path = path;
             Distance = distance;

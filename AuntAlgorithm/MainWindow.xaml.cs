@@ -1,13 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Windows;
 
-// Допольнить:
-// Для первой задачи:
-// 1. Вывод кратчайшего пути снизу                                          X
-// 2. Сбоку таблица путей всех муравьёв на итерации                         X
-// 3. Табу лист для муравья (он не может посещать уже посещённую вершину)   V
-// 4. Немного усложнить граф
-
 namespace AuntAlgorithm;
 
 /// <summary>
@@ -35,7 +28,7 @@ public partial class MainWindow : Window
         };
         _graph.LogPheromones();
 
-        _antAl = new AntAl(_graph, P: 0.1, antCount: 1, iterCount: 3);
+        _antAl = new AntAl(_graph, P: 50, antCount: 1, iterCount: 3);
 
         _antAl.FinishPoint = 13;
         _antAl.StartPoint = 0;
@@ -80,7 +73,7 @@ public partial class MainWindow : Window
                     _gVM.Render();
                 });
 
-                await Task.Delay(1000);
+                await Task.Delay(1500);
             }
         });
     }
@@ -89,6 +82,7 @@ public partial class MainWindow : Window
     {
         _graph.GenerateComivoiaj(_antAl.PC, (int)GraphCanvas.ActualWidth, (int)GraphCanvas.ActualHeight);
         _gVM.M = Mode.Comivoiaj;
+        _antAl.IsRunning = false;
         _graph.InitPheromones(_antAl.Tau0);
         _gVM.UpdateGraph(_graph);
         _gVM.NormalizeCoordinates(GraphCanvas.ActualWidth, GraphCanvas.ActualHeight);
@@ -110,7 +104,7 @@ public partial class MainWindow : Window
                 {
                     _gVM.Render();
                 });
-                await Task.Delay(1000);
+                await Task.Delay(1500);
             }
         });
 
