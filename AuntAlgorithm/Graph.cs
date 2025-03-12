@@ -13,12 +13,30 @@ namespace AuntAlgorithm
         double[,]? edgesM;
         public double[,] PheromonsM;
 
+        public double[,]? EdgesM
+        {
+            get
+            {
+                if (edgesM == null) return null;
+                return (double[,]?) edgesM.Clone();
+            }
+        }
+
         // Вершины
         Dictionary<int, Point>? vertices;
 
         public List<int> optPath;
 
         public Graph() { PheromonsM = new double[1, 1]; optPath = new List<int>(); }
+
+        public Graph(Graph graph)
+        {
+            edgesM = graph.EdgesM;
+            vertices = graph.vertices;
+            PheromonsM = new double[1, 1]; 
+            optPath = new List<int>();
+            LogEdges();
+        }
 
         public Dictionary<int, Point> Vertices
         {
@@ -29,12 +47,6 @@ namespace AuntAlgorithm
                 else
                     return new Dictionary<int, Point>();
             }
-        }
-
-
-        public double[,] EdgesM
-        {
-            get { return (edgesM == null)? new double[1, 1] : edgesM; }
         }
 
         public bool ParseFromFile(string Path)
@@ -81,6 +93,7 @@ namespace AuntAlgorithm
         public void GenerateComivoiaj(int N, int W, int H)
         {
             if (W == 0 || H == 0 || N <= 0) return;
+            optPath = new List<int>();
             Dictionary<int, Point> tmpVert = new Dictionary<int, Point>();
             double[,] tmpEdgesM = new double[N, N];
             double[,] tmpPheromonsM = new double[N, N];
@@ -111,6 +124,8 @@ namespace AuntAlgorithm
                     if (edgesM[i, j] != 0)
                         PheromonsM[i, j] = tau0;
         }
+
+        #region Логирование
         public void LogPheromones()
         {
             if (PheromonsM == null) { return; }
@@ -123,6 +138,22 @@ namespace AuntAlgorithm
             }
             Debug.Write("\n");
         }
+        public void LogEdges()
+        {
+            Debug.Write("Edges:\n");
+            for (int i = 0; i < Vertices.Count; i++)
+            { 
+                for (int j = 0; j < Vertices.Count; j++)
+                    Debug.Write($"{EdgesM[i,j]:F2} ");
+                Debug.Write("\n");
+            }
+            Debug.Write("\n");
+        }
+        public void LogOptPath()
+        {
+            Debug.WriteLine("Opt. path:" + string.Join(" -> ", optPath));
+        }
+        #endregion
 
         double CalcDist(Point one, Point two)
         {
@@ -154,6 +185,14 @@ namespace AuntAlgorithm
         double _optDist;
         ObservableCollection<PathRow> _paths;      // Здесь сохраняем пути
         List<double> _optD; 
+
+        public Graph Gra
+        {
+            set
+            {
+                gra = value;
+            }
+        }
 
         #region Свойства для связывания
         public double OptDist
@@ -461,7 +500,7 @@ namespace AuntAlgorithm
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() => Paths.Clear()));
 
             for (int i = 0; i < _antCount; i++){
-                Debug.Write($"Ant: {i} || iter: {_iter + 1}\n");
+                //Debug.Write($"Ant: {i} || iter: {_iter + 1}\n");
                 List<int> curPath; double curDist;
                 if (!salesman)  (curPath, curDist) = AntTripFromTo();
                 else            (curPath, curDist) = AntTripSalesman(Math.Min(i, PC-1));
@@ -489,7 +528,7 @@ namespace AuntAlgorithm
             EvaporatePheromones();
 
             Debug.Write($"| iter: {++Iter}\n" + $"| optimal path: {string.Join(" -> ", gra.optPath)}" + "\n");
-            Debug.Write($"| optimal distance on iter: {_optDist}\n");
+            //Debug.Write($"| optimal distance on iter: {_optDist}\n");
         }
 
         // Путешествие отдельно взятого муравья по всем точкам
@@ -518,18 +557,16 @@ namespace AuntAlgorithm
 
             DepositPheromones(path, dist);
 
-            Debug.Write($" path: {string.Join(" -> ", path)}" + "\n");
-            Debug.Write($" distance {dist}\n");
+            //Debug.Write($" path: {string.Join(" -> ", path)}" + "\n");
+            //Debug.Write($" distance {dist}\n");
 
             return (path, dist);
         }
 
         #endregion
 
-        public void LogOptimalDistanceArchive()
-        {
-            Debug.WriteLine($"\ndistances: {string.Join("\n", _optD)}");
-        }
+        public void LogOptimalDistanceArchive() =>
+            Debug.WriteLine($"\ndistances:\n{string.Join("\n", _optD)}");
     }
 
     #region Классы для десериализации

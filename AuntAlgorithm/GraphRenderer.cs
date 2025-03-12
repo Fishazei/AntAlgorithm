@@ -1,16 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Drawing;
 using System.Diagnostics;
-using System.Collections.ObjectModel;
-using System.IO;
 
 namespace AuntAlgorithm
 {
@@ -106,6 +99,7 @@ namespace AuntAlgorithm
 
         void DrawNodes()
         {
+            graph.LogOptPath();
             for (int i = 0; i < graph.Vertices.Count; i++)
             {
                 var ell = new Ellipse
