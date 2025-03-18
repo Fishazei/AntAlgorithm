@@ -402,8 +402,7 @@ namespace AuntAlgorithm
             double[] probable = new double[count];
             double sum = 0;
 
-            for (int i = 0; i < count; i++)
-            {
+            for (int i = 0; i < count; i++) {
                 if (gra.EdgesM[cur, i] == 0) { continue; }
                 if (path.Contains(i)) { continue; }
                 double pher = gra.PheromonsM[cur, i];
@@ -413,12 +412,7 @@ namespace AuntAlgorithm
                 sum += probable[i];
             }
 
-            for (int i = 0; i < count; i++) { 
-                probable[i] /= sum;
-                //Debug.WriteIf(gra.EdgesM[cur, i] != 0, $"| {i} : {probable[i]:F2} ");
-            }
-            //Debug.Write($"| = {sum:F2}\n");
-
+            for (int i = 0; i < count; i++) probable[i] /= sum;
             return probable;
         }
 
@@ -427,8 +421,7 @@ namespace AuntAlgorithm
             double rVal = new Random().NextDouble();
             double cumulProb = 0;
 
-            for (int i = 0; i < prob.Length; i++)
-            {
+            for (int i = 0; i < prob.Length; i++) {
                 cumulProb += prob[i];
                 if (rVal <= cumulProb)
                     return i;
@@ -438,46 +431,33 @@ namespace AuntAlgorithm
         }
 
         // Распределение феромонов
-        void DepositPheromones(List<int> path, double dist)
-        {
+        void DepositPheromones(List<int> path, double dist) {
             double deposit = _antTau / dist;
-
             for (int i = 0; i < path.Count() - 1; i++)
-            {
-                gra.PheromonsM[path[i], path[i+1]] += deposit;
-            }
+                gra.PheromonsM[path[i], path[i+1]] += deposit;   
         }
 
         //Выветривание феромонов
-        void EvaporatePheromones()
-        {
+        void EvaporatePheromones() {
             for (int i = 0; i < gra.Vertices.Count; i++)
                 for (int j = 0; j < gra.Vertices.Count; j++)
                     gra.PheromonsM[i, j] *= (1 - _P / 100f);
         }
 
         // Путешествие отдельно взятого муравья от и до
-        (List<int> path, double distance) AntTripFromTo()
-        {
+        (List<int> path, double distance) AntTripFromTo() {
             List<int> path = [_startPoint];
             int cur = _startPoint;
-            while (cur != _finishPoint && path.Count() < gra.Vertices.Count() + 1 && cur != -1)
-            {
+            while (cur != _finishPoint && path.Count() < gra.Vertices.Count() + 1 && cur != -1) {
                 cur = ChooseNextVertex(cur, path);
                 path.Add(cur);
             }
-
-            //Debug.Write($" path: {string.Join(" -> ",path)}" + "\n");
-
-            if (cur == _finishPoint)
-            {
+            if (cur == _finishPoint) {
                 double dist = 0;
-
                 for (int i = 1; i < path.Count; i++)
                     dist += gra.EdgesM[path[i - 1], path[i]];
 
                 DepositPheromones(path, dist);
-                //Debug.Write($" distance {dist}\n");
                 return (path, dist);
             }
             return (path, -1);
@@ -486,6 +466,7 @@ namespace AuntAlgorithm
         // Одна итерация алгоритма по всем муравьям
         public void AntTravelStep(bool salesman)
         {
+            if (Iter == 0) { _optD.Clear(); }
             if ( Iter >= _iterCount) {
                 IsRunning = false;
                 Iter = 0;
@@ -500,7 +481,6 @@ namespace AuntAlgorithm
                 System.Windows.Application.Current.Dispatcher.BeginInvoke(new Action(() => Paths.Clear()));
 
             for (int i = 0; i < _antCount; i++){
-                //Debug.Write($"Ant: {i} || iter: {_iter + 1}\n");
                 List<int> curPath; double curDist;
                 if (!salesman)  (curPath, curDist) = AntTripFromTo();
                 else            (curPath, curDist) = AntTripSalesman(Math.Min(i, PC-1));
@@ -528,41 +508,29 @@ namespace AuntAlgorithm
             EvaporatePheromones();
 
             Debug.Write($"| iter: {++Iter}\n" + $"| optimal path: {string.Join(" -> ", gra.optPath)}" + "\n");
-            //Debug.Write($"| optimal distance on iter: {_optDist}\n");
         }
 
         // Путешествие отдельно взятого муравья по всем точкам
-        (List<int> path, double distance) AntTripSalesman(int start)
-        {
+        (List<int> path, double distance) AntTripSalesman(int start) {
             List<int> path = [start];
             int cur = start;
 
             // Посещаем все вершины
-            while (path.Count < gra.Vertices.Count)
-            {
+            while (path.Count < gra.Vertices.Count) {
                 cur = ChooseNextVertex(cur, path);
                 if (cur == -1) // Если следующая вершина не найдена
-                {
                     return (path, -1); // Некорректный путь
-                }
+                
                 path.Add(cur);
             }
             path.Add(start);
-
             double dist = 0;
             for (int i = 1; i < path.Count; i++)
-            {
                 dist += gra.EdgesM[path[i - 1], path[i]];
-            }
 
             DepositPheromones(path, dist);
-
-            //Debug.Write($" path: {string.Join(" -> ", path)}" + "\n");
-            //Debug.Write($" distance {dist}\n");
-
             return (path, dist);
         }
-
         #endregion
 
         public void LogOptimalDistanceArchive() =>

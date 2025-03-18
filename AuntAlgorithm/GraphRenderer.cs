@@ -99,7 +99,7 @@ namespace AuntAlgorithm
 
         void DrawNodes()
         {
-            graph.LogOptPath();
+            // graph.LogOptPath();
             for (int i = 0; i < graph.Vertices.Count; i++)
             {
                 var ell = new Ellipse

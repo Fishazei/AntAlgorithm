@@ -104,7 +104,7 @@ public partial class MainWindow : Window
                 {
                     _gVM.Render();
                 });
-                await Task.Delay(1500);
+                await Task.Delay(1000);
             }
         });
 
